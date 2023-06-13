@@ -9,8 +9,8 @@
 
 ARG ARCH=arm64
 ARG HOME_FOLDER=/root
-FROM --platform=linux/$ARCH nvcr.io/nvidia/l4t-ml:r32.7.1-py3
-WORKDIR $HOME_FOLDER/
+FROM --platform=linux/${ARCH} nvcr.io/nvidia/l4t-ml:r32.7.1-py3
+WORKDIR ${HOME_FOLDER}/
 
 # Fix apt install stuck problem
 ENV DEBIAN_FRONTEND=noninteractive
@@ -53,7 +53,7 @@ RUN apt install -y lsb-release apt-utils software-properties-common zsh unzip nc
 RUN pip3 install -U jetson-stats
 
 # copy all config files to home folder
-COPY --from=home-folder-config ./. $HOME_FOLDER/
+COPY --from=home-folder-config ./. ${HOME_FOLDER}/
 
 # install zsh, Oh-My-Zsh, and plugins
 RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v1.1.5/zsh-in-docker.sh)" -- \
@@ -63,13 +63,13 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
     -p https://github.com/zsh-users/zsh-completions \
     -p https://github.com/zsh-users/zsh-syntax-highlighting \
     -p https://github.com/CraigCarey/gstreamer-tab \
-    -a "[[ ! -f $HOME_FOLDER/.p10k.zsh ]] || source $HOME_FOLDER/.p10k.zsh" \
+    -a "[[ ! -f ${HOME_FOLDER}/.p10k.zsh ]] || source ${HOME_FOLDER}/.p10k.zsh" \
     -a "bindkey -M emacs '^[[3;5~' kill-word" \
     -a "bindkey '^H' backward-kill-word" \
     -a "autoload -U compinit && compinit"
 
 # change default shell for the $USER in the image building process for extra environment safety
-RUN chsh -s $(which zsh) $USER
+RUN chsh -s $(which zsh)
 SHELL [ "/bin/zsh", "-c" ]
 
 #! Install ROS melodic workspace
@@ -77,8 +77,8 @@ RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main"
     apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654 && \
     apt update -o Acquire::Check-Valid-Until=false -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngradeToInsecureRepositories=true && \
     apt install -y ros-melodic-ros-base && \
-    echo "source /opt/ros/melodic/setup.zsh" >> $HOME_FOLDER/.zshrc && \
-    echo "source /opt/ros/melodic/setup.bash" >> $HOME_FOLDER/.bashrc && \
+    echo "source /opt/ros/melodic/setup.zsh" >> ${HOME_FOLDER}/.zshrc && \
+    echo "source /opt/ros/melodic/setup.bash" >> ${HOME_FOLDER}/.bashrc && \
     apt install -y python-rosdep python-rosinstall python-rosinstall-generator python-wstool && \
     rosdep init && \
     rosdep update
@@ -101,22 +101,28 @@ RUN apt install -y gnupg && \
 RUN apt install -y nvidia-vpi libnvvpi1 vpi1-dev vpi1-samples python-vpi1 python3-vpi1
 
 # Install Ceres
-# RUN apt install -y git cmake libgoogle-glog-dev libgflags-dev libatlas-base-dev libeigen3-dev libsuitesparse-dev && \
-#     wget -q http://ceres-solver.org/ceres-solver-2.0.0.tar.gz && \
-#     tar -zxf ceres-solver-2.0.0.tar.gz && \
-#     mkdir ceres-bin && \
-#     cd ceres-bin && \
-#     cmake ../ceres-solver-2.0.0 && \
-#     make -j$(($(nproc)-1)) && \
-#     make install
-# RUN rm -rf $HOME_FOLDER/ceres-solver-2.0.0.tar.gz $HOME_FOLDER/ceres-solver-2.0.0 $HOME_FOLDER/ceres-bin
+RUN apt install -y git cmake libgoogle-glog-dev libgflags-dev libatlas-base-dev libeigen3-dev libsuitesparse-dev && \
+    wget -q http://ceres-solver.org/ceres-solver-2.0.0.tar.gz && \
+    tar -zxf ceres-solver-2.0.0.tar.gz && \
+    mkdir ceres-bin && \
+    cd ceres-bin && \
+    cmake ../ceres-solver-2.0.0 && \
+    make -j$(($(nproc)-1)) && \
+    make install
+RUN rm -rf ${HOME_FOLDER}/ceres-solver-2.0.0.tar.gz ${HOME_FOLDER}/ceres-solver-2.0.0 ${HOME_FOLDER}/ceres-bin
 
-# # Install Torch-TensorRT
-# RUN mkdir -p $HOME_FOLDER/Torch-TensorRT
-# COPY --from=torch-tensorrt-config . $HOME_FOLDER/Torch-TensorRT/
-# ENV BAZEL_VERSION=4.2.1
-# RUN wget -q https://github.com/bazelbuild/bazel/releases/download/$BAZEL_VERSION/bazel-$BAZEL_VERSION-linux-$ARCH -O /usr/bin/bazel && \
-#     chmod a+x /usr/bin/bazel
+# Install Torch-TensorRT
+RUN git clone --recursive https://github.com/pytorch/TensorRT.git ${HOME_FOLDER}/Torch-TensorRT -b v1.0.0
+COPY --from=torch-tensorrt-config ./WORKSPACE ${HOME_FOLDER}/Torch-TensorRT/WORKSPACE
+ENV BAZEL_VERSION=4.2.1
+RUN wget -q https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-linux-${ARCH} -O /usr/bin/bazel && \
+    chmod a+x /usr/bin/bazel
+# Build Torch-TensorRT C++ tarball
+RUN cd ${HOME_FOLDER}/Torch-TensorRT && \
+    bazel build //:libtorchtrt --platforms //toolchains:jetpack_4.6
+# Install Torch-TensorRT python3 package
+RUN cd ${HOME_FOLDER}/Torch-TensorRT/py && \
+    python3 setup.py install --jetpack-version 4.6 --use-cxx11-abi
 
 # end of apt installs
 RUN apt autoremove -y && \
@@ -131,4 +137,4 @@ ENV NVIDIA_VISIBLE_DEVICES \
 #     ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}
 
 # Entrypoint command
-ENTRYPOINT [ "/bin/zsh", "-c", "source $HOME_FOLDER/.zshrc; zsh" ]
+ENTRYPOINT [ "/bin/zsh", "-c", "source ${HOME_FOLDER}/.zshrc; zsh" ]

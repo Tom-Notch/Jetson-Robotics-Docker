@@ -41,3 +41,28 @@ This repo contains dockerfile and script to build/pull, run docker images for cr
   ```
 
   If you do not see `docker-buildx-plugin` available or it doesn't solve the previous problem, please follow [the official guide](https://docs.docker.com/engine/install/ubuntu/) to install the complete `docker engine`
+* Building Torch-TensorRT from source
+  * On Jetson platforms, NVIDIA hosts [pre-built Pytorch wheel files](https://forums.developer.nvidia.com/t/pytorch-for-jetson-version-1-10-now-available/72048). These wheel files are built with CXX11 ABI. You'll also notice that there're `Pre CXX11 ABI` and `CXX11 ABI` versions of libtorch on [the official download website](https://pytorch.org/get-started/locally/) of PyTorch
+  * What's Pre CXX11 ABI and CXX11 ABI? You can ask ChatGPT, and here's its answer:
+
+    ```txt
+    C++ Application Binary Interface (ABI) is the specification to which executable code adheres in order to facilitate correct interaction between different executable components. This includes conventions for name mangling, exception handling, calling conventions, and the layout of object code and system libraries.
+
+    The term "Pre-CXX ABI" likely refers to a version of the C++ ABI that was in use before a specific change was introduced. An ABI can change over time as new language features are added, compilers improve, or for other reasons. When such changes occur, binary code compiled with a newer version of the compiler may not be compatible with code compiled with an older version, due to different expectations about how things like name mangling or exception handling work.
+
+    One notable ABI break in C++ occurred with the release of GCC 5.1. This release changed the ABI in a way that was not backwards-compatible, primarily to improve the implementation of C++11's std::string and std::list types. The ABI used by versions of GCC prior to this change is often referred to as the "old" or "pre-CXX11" ABI. Code compiled with the new ABI cannot be safely linked with code compiled with the old ABI.
+    ```
+
+    This basically means that `Pre CXX11 ABI` and `CXX11 ABI` are two distinct versions of a library, and cannot be used in a mixture. Since Torch-TensorRT depends on PyTorch, whether to use `Pre CXX11 ABI` or `CXX11 ABI` also depends on how PyTorch is built. To check this, you can directly consult torch in python3:
+
+    ```Python
+    python3
+    Python 3.6.9 (default, Mar 10 2023, 16:46:00)
+    [GCC 8.4.0] on linux
+    Type "help", "copyright", "credits" or "license" for more information.
+    >>> import torch
+    >>> torch._C._GLIBCXX_USE_CXX11_ABI
+    True
+    ```
+
+    This means that PyTorch is compiled with `CXX11 ABI`, which means that the libtorch under the hood is also compiled with `CXX11 ABI`
