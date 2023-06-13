@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 #
 # Created on Mon Jun 12 2023 18:35:25
 # Author: Mukai (Tom Notch) Yu
@@ -8,15 +8,9 @@
 # Copyright Ⓒ 2023 Mukai (Tom Notch) Yu
 #
 
-DATASET_PATH="/home/tomnotch/bags" #! modify the following dataset path with yours
+source $(dirname "$0")/common.sh
 
 xhost +local:root
-XAUTH=/tmp/.docker.xauth
-AVAILABLE_CORES=$(($(nproc) - 1))
-CONTAINER_NAME=jetson-robotics
-CONTAINER_HOME_FOLER=/root
-HOST_UID=$(id -u)
-HOST_GID=$(id -g)
 
 if [ ! -f $XAUTH ]
 then
@@ -31,6 +25,12 @@ then
     chmod a+r $XAUTH
 fi
 
+if [ "$(docker ps -a -q -f name=$CONTAINER_NAME)" ]; then
+    echo "A container with name $CONTAINER_NAME is running, force removing it"
+    docker rm -f $CONTAINER_NAME
+    echo "Done"
+fi
+
 docker run --name $CONTAINER_NAME \
            --hostname $(hostname) \
            --privileged \
@@ -41,13 +41,16 @@ docker run --name $CONTAINER_NAME \
            --network host \
            --ipc host \
            --ulimit core=-1 \
+           --group-add audio \
+           --group-add video \
            -e "DISPLAY=$DISPLAY"  \
            -e "QT_X11_NO_MITSHM=1" \
            -e "XAUTHORITY=$XAUTH" \
-           -v /var/lib/systemd/coredump/:/cores \
+           -v /usr/local/cuda-10.2:/usr/local/cuda-10.2:ro \
+           -v /var/lib/systemd/coredump:/cores \
            -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
            -v /run/jtop.sock:/run/jtop.sock \
            -v $XAUTH:$XAUTH \
-           -v "$DATASET_PATH:$CONTAINER_HOME_FOLER/data" \
+           -v "$DATASET_PATH:$CONTAINER_HOME_FOLDER/data" \
            --rm \
-           -itd tomnotch/jetson-robotics:R32.7.1-cuda-torch-tensorrt-ros-melodic
+           -itd $DOCKER_USER/$IMAGE_NAME:$IMAGE_TAG

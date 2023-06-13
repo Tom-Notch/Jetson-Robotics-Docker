@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 #
 # Created on Mon Jun 12 2023 18:35:31
 # Author: Mukai (Tom Notch) Yu
@@ -8,4 +8,6 @@
 # Copyright Ⓒ 2023 Mukai (Tom Notch) Yu
 #
 
-docker pull tomnotch/jetson-robotics:R32.7.1-cuda-torch-tensorrt-ros-melodic
+source $(dirname "$0")/common.sh
+
+docker pull $DOCKER_USER/$IMAGE_NAME:$IMAGE_TAG

@@ -7,9 +7,8 @@
  # Copyright Ⓒ 2023 Mukai (Tom Notch) Yu
  # =============================================================================
 
-ARG ARCH=arm64
-ARG HOME_FOLDER=/root
-FROM --platform=linux/${ARCH} nvcr.io/nvidia/l4t-ml:r32.7.1-py3
+FROM --platform=linux/arm64 nvcr.io/nvidia/l4t-ml:r32.7.1-py3
+ENV HOME_FOLDER=/root
 WORKDIR ${HOME_FOLDER}/
 
 # Fix apt install stuck problem
@@ -50,7 +49,7 @@ RUN update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1 && \
 RUN apt install -y lsb-release apt-utils software-properties-common zsh unzip ncdu git less screen tmux tree locate perl net-tools vim nano emacs htop curl wget build-essential cmake ffmpeg
 
 # install jtop
-RUN pip3 install -U jetson-stats
+RUN sudo pip3 install -U jetson-stats
 
 # copy all config files to home folder
 COPY --from=home-folder-config ./. ${HOME_FOLDER}/
@@ -72,7 +71,7 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
 RUN chsh -s $(which zsh)
 SHELL [ "/bin/zsh", "-c" ]
 
-#! Install ROS melodic workspace
+#! Install ROS melodic
 RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list' && \
     apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654 && \
     apt update -o Acquire::Check-Valid-Until=false -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngradeToInsecureRepositories=true && \
@@ -111,18 +110,10 @@ RUN apt install -y git cmake libgoogle-glog-dev libgflags-dev libatlas-base-dev 
     make install
 RUN rm -rf ${HOME_FOLDER}/ceres-solver-2.0.0.tar.gz ${HOME_FOLDER}/ceres-solver-2.0.0 ${HOME_FOLDER}/ceres-bin
 
-# Install Torch-TensorRT
-RUN git clone --recursive https://github.com/pytorch/TensorRT.git ${HOME_FOLDER}/Torch-TensorRT -b v1.0.0
-COPY --from=torch-tensorrt-config ./WORKSPACE ${HOME_FOLDER}/Torch-TensorRT/WORKSPACE
+# Install Bazel
 ENV BAZEL_VERSION=4.2.1
-RUN wget -q https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-linux-${ARCH} -O /usr/bin/bazel && \
+RUN wget -q https://github.com/bazelbuild/bazel/releases/download/$BAZEL_VERSION/bazel-$BAZEL_VERSION-linux-arm64 -O /usr/bin/bazel && \
     chmod a+x /usr/bin/bazel
-# Build Torch-TensorRT C++ tarball
-RUN cd ${HOME_FOLDER}/Torch-TensorRT && \
-    bazel build //:libtorchtrt --platforms //toolchains:jetpack_4.6
-# Install Torch-TensorRT python3 package
-RUN cd ${HOME_FOLDER}/Torch-TensorRT/py && \
-    python3 setup.py install --jetpack-version 4.6 --use-cxx11-abi
 
 # end of apt installs
 RUN apt autoremove -y && \
@@ -131,10 +122,8 @@ RUN apt autoremove -y && \
     rm -rf /var/lib/apt/lists/*
 
 # nvidia-container-runtime
-ENV NVIDIA_VISIBLE_DEVICES \
-    ${NVIDIA_VISIBLE_DEVICES:-all}
-# ENV NVIDIA_DRIVER_CAPABILITIES \
-#     ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=all
 
 # Entrypoint command
 ENTRYPOINT [ "/bin/zsh", "-c", "source ${HOME_FOLDER}/.zshrc; zsh" ]
