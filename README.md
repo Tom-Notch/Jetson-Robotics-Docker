@@ -4,6 +4,8 @@ This repo contains dockerfile and script to build/pull, run docker images for cr
 
 ## Docker
 
+* This repository uses `docker buildx` to (cross-)compile docker image, check your available target architecture by executing `docker buildx ls` in a shell terminal
+  * If it doesn't support the desired architecture, install emulator from [binfmt](https://github.com/tonistiigi/binfmt) by executing `docker run --privileged --rm tonistiigi/binfmt --install all` in a shell terminal
 * The base is from [Nvidia NGC L4T ML container images](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/l4t-ml)
   * Supports JetPack > 4.4, i.e. L4T > R32.4.2
   * Contains PyTorch, TensorFlow, onnx, CUDA, cuDNN, etc. Check the website Overview for more info on distribution-specific libraries.
@@ -23,3 +25,19 @@ This repo contains dockerfile and script to build/pull, run docker images for cr
     * TensorRT
     * VPI
     * OpenCV
+
+## Known Issue
+
+* If you encountered the following error:
+
+  ```Shell
+  unknown flag: --platform
+  ```
+
+  Then you need to install `buildx` plugin by
+
+  ```Shell
+  sudo apt install docker-buildx-plugin
+  ```
+
+  If you do not see `docker-buildx-plugin` available or it doesn't solve the previous problem, please follow [the official guide](https://docs.docker.com/engine/install/ubuntu/) to install the complete `docker engine`

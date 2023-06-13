@@ -53,7 +53,7 @@ RUN apt install -y lsb-release apt-utils software-properties-common zsh unzip nc
 RUN pip3 install -U jetson-stats
 
 # copy all config files to home folder
-COPY --from=build-context-config ./. $HOME_FOLDER/
+COPY --from=home-folder-config ./. $HOME_FOLDER/
 
 # install zsh, Oh-My-Zsh, and plugins
 RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v1.1.5/zsh-in-docker.sh)" -- \
@@ -101,21 +101,22 @@ RUN apt install -y gnupg && \
 RUN apt install -y nvidia-vpi libnvvpi1 vpi1-dev vpi1-samples python-vpi1 python3-vpi1
 
 # Install Ceres
-RUN apt install -y git cmake libgoogle-glog-dev libgflags-dev libatlas-base-dev libeigen3-dev libsuitesparse-dev && \
-    wget -q http://ceres-solver.org/ceres-solver-2.0.0.tar.gz && \
-    tar -zxf ceres-solver-2.0.0.tar.gz && \
-    mkdir ceres-bin && \
-    cd ceres-bin && \
-    cmake ../ceres-solver-2.0.0 && \
-    make -j$(($(nproc)-1)) && \
-    make install
-RUN rm -rf $HOME_FOLDER/ceres-solver-2.0.0.tar.gz $HOME_FOLDER/ceres-solver-2.0.0 $HOME_FOLDER/ceres-bin
+# RUN apt install -y git cmake libgoogle-glog-dev libgflags-dev libatlas-base-dev libeigen3-dev libsuitesparse-dev && \
+#     wget -q http://ceres-solver.org/ceres-solver-2.0.0.tar.gz && \
+#     tar -zxf ceres-solver-2.0.0.tar.gz && \
+#     mkdir ceres-bin && \
+#     cd ceres-bin && \
+#     cmake ../ceres-solver-2.0.0 && \
+#     make -j$(($(nproc)-1)) && \
+#     make install
+# RUN rm -rf $HOME_FOLDER/ceres-solver-2.0.0.tar.gz $HOME_FOLDER/ceres-solver-2.0.0 $HOME_FOLDER/ceres-bin
 
-# Install Torch-TensorRT
-RUN git clone --recursive https://github.com/pytorch/TensorRT.git ~/Torch-TensorRT -b v1.0.0
-ENV BAZEL_VERSION=4.2.1
-RUN wget -q https://github.com/bazelbuild/bazel/releases/download/$BAZEL_VERSION/bazel-$BAZEL_VERSION-linux-$ARCH -O /usr/bin/bazel && \
-    chmod a+x /usr/bin/bazel
+# # Install Torch-TensorRT
+# RUN mkdir -p $HOME_FOLDER/Torch-TensorRT
+# COPY --from=torch-tensorrt-config . $HOME_FOLDER/Torch-TensorRT/
+# ENV BAZEL_VERSION=4.2.1
+# RUN wget -q https://github.com/bazelbuild/bazel/releases/download/$BAZEL_VERSION/bazel-$BAZEL_VERSION-linux-$ARCH -O /usr/bin/bazel && \
+#     chmod a+x /usr/bin/bazel
 
 # end of apt installs
 RUN apt autoremove -y && \
