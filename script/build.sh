@@ -8,7 +8,7 @@
 # Copyright Ⓒ 2023 Mukai (Tom Notch) Yu
 #
 
-source $(dirname "$0")/common.sh
+source $(dirname "$0")/variables.sh
 
 docker buildx build --platform linux/arm64 \
                     --build-context home-folder-config=$(dirname "$0")/../docker/build-context/home-folder \

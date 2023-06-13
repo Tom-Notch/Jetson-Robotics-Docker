@@ -8,6 +8,8 @@
 # Copyright Ⓒ 2023 Mukai (Tom Notch) Yu
 #
 
+source $(dirname "$0")/variables.sh
+
 echo "Removing all containers"
 docker rm -f $(docker ps -aq)
 echo "Done"

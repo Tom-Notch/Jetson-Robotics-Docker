@@ -8,6 +8,6 @@
 # Copyright Ⓒ 2023 Mukai (Tom Notch) Yu
 #
 
-source $(dirname "$0")/common.sh
+source $(dirname "$0")/variables.sh
 
 docker pull $DOCKER_USER/$IMAGE_NAME:$IMAGE_TAG

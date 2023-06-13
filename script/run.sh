@@ -8,7 +8,7 @@
 # Copyright Ⓒ 2023 Mukai (Tom Notch) Yu
 #
 
-source $(dirname "$0")/common.sh
+source $(dirname "$0")/variables.sh
 
 xhost +local:root
 
