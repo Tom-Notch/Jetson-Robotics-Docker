@@ -8,7 +8,7 @@
  # =============================================================================
 
 FROM --platform=linux/arm64 nvcr.io/nvidia/l4t-ml:r32.7.1-py3
-ARG HOME_FOLDER=/root
+ENV HOME_FOLDER=/root
 WORKDIR ${HOME_FOLDER}/
 
 # Fix apt install stuck problem
@@ -69,17 +69,20 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
     -a "export LD_LIBRARY_PATH=/usr/local/lib/python3.6/dist-packages/torch/lib:/usr/lib/aarch64-linux-gnu/:/usr/local/lib/python3.6/dist-packages/torch_tensorrt/lib:${LD_LIBRARY_PATH}"
 
 # Append libtorch, TensorRT, torch_tensorrt library path to LD_LIBRARY_PATH in bashrc
-RUN sudo echo "export LD_LIBRARY_PATH=/usr/local/lib/python3.6/dist-packages/torch/lib:/usr/lib/aarch64-linux-gnu/:/usr/local/lib/python3.6/dist-packages/torch_tensorrt/lib:${LD_LIBRARY_PATH}" >> $HOME_FOLDER/.bashrc
+RUN echo "export LD_LIBRARY_PATH=/usr/local/lib/python3.6/dist-packages/torch/lib:/usr/lib/aarch64-linux-gnu/:/usr/local/lib/python3.6/dist-packages/torch_tensorrt/lib:${LD_LIBRARY_PATH}" >> ${HOME_FOLDER}/.bashrc
 
 # change default shell for the $USER in the image building process for extra environment safety
 RUN chsh -s $(which zsh)
 SHELL [ "/bin/zsh", "-c" ]
 
 #! Install ROS melodic
+# remove the conflicting opencv 4.5.0 (with CUDA) pre-installed in the base image
+RUN apt purge -y opencv-dev opencv-libs opencv-licenses opencv-main opencv-python opencv-scripts --autoremove
+
 RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list' && \
     apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654 && \
     apt update -o Acquire::Check-Valid-Until=false -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngradeToInsecureRepositories=true && \
-    apt install -y ros-melodic-ros-base && \
+    apt install -y ros-melodic-desktop-full && \
     echo "source /opt/ros/melodic/setup.zsh" >> ${HOME_FOLDER}/.zshrc && \
     echo "source /opt/ros/melodic/setup.bash" >> ${HOME_FOLDER}/.bashrc && \
     apt install -y python-rosdep python-rosinstall python-rosinstall-generator python-wstool && \
@@ -91,6 +94,12 @@ RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu `lsb_release -sc` main" 
     wget http://packages.ros.org/ros.key -O - | apt-key add - && \
     apt update -o Acquire::Check-Valid-Until=false -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngradeToInsecureRepositories=true && \
     apt install -y python3-catkin-tools ros-melodic-rosmon
+
+# mark-hold on libopencv-dev to 3.2
+RUN apt-mark hold libopencv-dev
+
+# install libv4l-dev, v4l-utils, and libgstreamer1.0-dev
+RUN apt install -y libv4l-dev v4l-utils libgstreamer1.0-dev
 
 #! add L4T R32.7.* apt repo, t194 is the xavier nx specific repo
 RUN apt install -y gnupg && \
@@ -109,18 +118,16 @@ RUN wget -q https://github.com/bazelbuild/bazel/releases/download/$BAZEL_VERSION
 RUN apt install -y nvidia-vpi libnvvpi1 vpi1-dev vpi1-samples python-vpi1 python3-vpi1
 
 # Install TensorRT
-RUN apt install nvidia-tensorrt
+RUN apt install -y nvidia-tensorrt
 
-# Install Ceres
-RUN apt install -y git cmake libgoogle-glog-dev libgflags-dev libatlas-base-dev libeigen3-dev libsuitesparse-dev && \
-    wget -q http://ceres-solver.org/ceres-solver-2.0.0.tar.gz && \
-    tar -zxf ceres-solver-2.0.0.tar.gz && \
-    mkdir ceres-bin && \
-    cd ceres-bin && \
-    cmake ../ceres-solver-2.0.0 && \
+# Install Ceres Solver from source
+RUN git clone --recursive https://github.com/ceres-solver/ceres-solver.git ${HOME_FOLDER}/ceres-solver -b 2.0.0 && \
+    mkdir -p ${HOME_FOLDER}/ceres-solver/build && \
+    cd ${HOME_FOLDER}/ceres-solver/build && \
+    cmake .. && \
     make -j$(($(nproc)-1)) && \
-    make install
-RUN rm -rf ${HOME_FOLDER}/ceres-solver-2.0.0.tar.gz ${HOME_FOLDER}/ceres-solver-2.0.0 ${HOME_FOLDER}/ceres-bin
+    make install && \
+    rm -rf ${HOME_FOLDER}/ceres-solver
 
 # end of apt installs
 RUN apt autoremove -y && \

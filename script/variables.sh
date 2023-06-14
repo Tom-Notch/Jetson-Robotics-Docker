@@ -21,4 +21,4 @@ CONTAINER_HOME_FOLDER=/root
 HOST_UID=$(id -u)
 HOST_GID=$(id -g)
 
-DATASET_PATH="/home/tomnotch/bags" #! modify the dataset path with yours
+DATASET_PATH="/home/airlab/bags" #! modify the dataset path with yours

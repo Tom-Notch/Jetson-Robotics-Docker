@@ -52,5 +52,6 @@ docker run --name $CONTAINER_NAME \
            -v /run/jtop.sock:/run/jtop.sock \
            -v $XAUTH:$XAUTH \
            -v "$DATASET_PATH:$CONTAINER_HOME_FOLDER/data" \
+           -w "$CONTAINER_HOME_FOLDER/" \
            --rm \
            -itd $DOCKER_USER/$IMAGE_NAME:$IMAGE_TAG
