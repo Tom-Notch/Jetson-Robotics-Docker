@@ -4,8 +4,30 @@ This repo contains dockerfile and script to build/pull, run docker images for cr
 
 ## Usage
 
+* Prerequisites:
+  * On a Jetson Device (Currently only supports **Xavier NX flashed with R32.7**)
+  * Have **CUDA** installed locally
+    * To check:
+
+      ```Shell
+      sudo apt list --installed | egrep -i "nvidia-cuda|nvidia-l4t-cuda"
+      ls -lah /usr/local/cuda-10.2/
+      ````
+
+      If both packages appear and the `ls` shows reasonable outputs then CUDA is locally installed
+      This step is necessary since we will directly mount the `/usr/local/cuda-10.2/` directory onto the container
+
+  * Have **nvidia-docker** installed
+    * To check:
+
+      ```Shell
+      sudo apt list --installed | egrep -i "nvidia-docker2"
+      ````
+
+      If the package appears then it's installed
+
 * To build:
-  
+
   ```Shell
   ./script/build.sh
   ```
@@ -21,6 +43,8 @@ This repo contains dockerfile and script to build/pull, run docker images for cr
   ```Shell
   ./script/run.sh
   ```
+
+  Feel free to modify the default `run.sh` to append additional parameters/mounts
 
 ## Docker
 
@@ -87,3 +111,37 @@ This repo contains dockerfile and script to build/pull, run docker images for cr
     ```
 
     This shows that the installed PyTorch is compiled with `CXX11 ABI`, which means that the libtorch under the hood is also compiled with `CXX11 ABI`
+
+## How to contribute
+
+* Add more supported Jetson hardware + L4T version, currently supported:
+  |          |          |  R32.7   |  R35.3   |    ...   |
+  |   :--:   |   :--:   |   :--:   |   :--:   |   :--:   |
+  |   Orin   |   AGX    |    X     |    X     |    X     |
+  |          |   NX     |    X     |    X     |    X     |
+  |  Xavier  |   AGX    |    X     |    X     |    X     |
+  |          |   NX     |    ✓     |    X     |    X     |
+  |    TX    |    1     |    x     |   N/A    |   N/A    |
+  |          |    2     |    x     |   N/A    |   N/A    |
+  |   NANO   |          |    x     |   N/A    |   N/A    |
+  * **Only VPI and TensorRT are hardware specific**, so you can still use the docker image for NX on AGX if you don't need to use VPI and TensorRT
+  * R32.7.3 is the last L4T version that supports Ubuntu 18.04, later versions ( > R34.1 ) are all on Ubuntu 20.04
+* Follow the same naming convention and format for `dockerfile` and `build.sh`, put the CPU-only build in `dockerfile` and put the GPU-required parts in `build.sh`
+  * There were attemps to put GPU-required parts in `dockerfile`, however, it didn't work, here's what's been tried:
+    * Modify `/etc/docker/daemon.json` to:
+
+      ```json
+      {
+          "runtimes": {
+              "nvidia": {
+                  "path": "nvidia-container-runtime",
+                  "runtimeArgs": []
+              }
+          },
+          "default-runtime": "nvidia"
+      }
+      ```
+
+      Then `sudo systemctl restart docker`, this enables `--runtime=nvidia` in dockerfile build stage, but the `/usr/local/cuda-10.2/` inside the docker is still missing important libraries to build GPU-required libraries
+    * Save state of `/usr/local/cuda-10.2/` temporarily, `COPY` recursively from a `--build-context cuda-config=/usr/local/cuda-10.2/`, then build GPU-required libraries, finally restore `/usr/local/cuda-10.2/` to the state before `COPY`
+      * This didn't work since there were more required libraries under `/usr/lib/aarch64-linux-gnu/` like `libcudnn.so`, but the directory contains almost all the other unused libraries and is too big to perform the previous practice

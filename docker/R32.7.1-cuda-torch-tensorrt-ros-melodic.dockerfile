@@ -121,7 +121,8 @@ RUN apt install -y nvidia-vpi libnvvpi1 vpi1-dev vpi1-samples python-vpi1 python
 RUN apt install -y nvidia-tensorrt
 
 # Install Ceres Solver from source
-RUN git clone --recursive https://github.com/ceres-solver/ceres-solver.git ${HOME_FOLDER}/ceres-solver -b 2.0.0 && \
+RUN apt install -y cmake libgoogle-glog-dev libgflags-dev libatlas-base-dev libeigen3-dev libsuitesparse-dev && \
+    git clone --recursive https://github.com/ceres-solver/ceres-solver.git ${HOME_FOLDER}/ceres-solver -b 2.0.0 && \
     mkdir -p ${HOME_FOLDER}/ceres-solver/build && \
     cd ${HOME_FOLDER}/ceres-solver/build && \
     cmake .. && \
