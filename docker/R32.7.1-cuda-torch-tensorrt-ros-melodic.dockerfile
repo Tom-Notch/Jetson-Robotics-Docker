@@ -8,7 +8,7 @@
  # =============================================================================
 
 FROM --platform=linux/arm64 nvcr.io/nvidia/l4t-ml:r32.7.1-py3
-ENV HOME_FOLDER=/root
+ARG HOME_FOLDER=/root
 WORKDIR ${HOME_FOLDER}/
 
 # Fix apt install stuck problem
@@ -65,7 +65,11 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
     -a "[[ ! -f ${HOME_FOLDER}/.p10k.zsh ]] || source ${HOME_FOLDER}/.p10k.zsh" \
     -a "bindkey -M emacs '^[[3;5~' kill-word" \
     -a "bindkey '^H' backward-kill-word" \
-    -a "autoload -U compinit && compinit"
+    -a "autoload -U compinit && compinit" \
+    -a "export LD_LIBRARY_PATH=/usr/local/lib/python3.6/dist-packages/torch/lib:/usr/lib/aarch64-linux-gnu/:/usr/local/lib/python3.6/dist-packages/torch_tensorrt/lib:${LD_LIBRARY_PATH}"
+
+# Append libtorch, TensorRT, torch_tensorrt library path to LD_LIBRARY_PATH in bashrc
+RUN sudo echo "export LD_LIBRARY_PATH=/usr/local/lib/python3.6/dist-packages/torch/lib:/usr/lib/aarch64-linux-gnu/:/usr/local/lib/python3.6/dist-packages/torch_tensorrt/lib:${LD_LIBRARY_PATH}" >> $HOME_FOLDER/.bashrc
 
 # change default shell for the $USER in the image building process for extra environment safety
 RUN chsh -s $(which zsh)
@@ -96,8 +100,16 @@ RUN apt install -y gnupg && \
     add-apt-repository 'deb https://repo.download.nvidia.com/jetson/t194 r32.7 main' && \
     apt update
 
+# Install Bazel
+ENV BAZEL_VERSION=4.2.1
+RUN wget -q https://github.com/bazelbuild/bazel/releases/download/$BAZEL_VERSION/bazel-$BAZEL_VERSION-linux-arm64 -O /usr/bin/bazel && \
+    chmod a+x /usr/bin/bazel
+
 # Install VPI 1
 RUN apt install -y nvidia-vpi libnvvpi1 vpi1-dev vpi1-samples python-vpi1 python3-vpi1
+
+# Install TensorRT
+RUN apt install nvidia-tensorrt
 
 # Install Ceres
 RUN apt install -y git cmake libgoogle-glog-dev libgflags-dev libatlas-base-dev libeigen3-dev libsuitesparse-dev && \
@@ -109,11 +121,6 @@ RUN apt install -y git cmake libgoogle-glog-dev libgflags-dev libatlas-base-dev 
     make -j$(($(nproc)-1)) && \
     make install
 RUN rm -rf ${HOME_FOLDER}/ceres-solver-2.0.0.tar.gz ${HOME_FOLDER}/ceres-solver-2.0.0 ${HOME_FOLDER}/ceres-bin
-
-# Install Bazel
-ENV BAZEL_VERSION=4.2.1
-RUN wget -q https://github.com/bazelbuild/bazel/releases/download/$BAZEL_VERSION/bazel-$BAZEL_VERSION-linux-arm64 -O /usr/bin/bazel && \
-    chmod a+x /usr/bin/bazel
 
 # end of apt installs
 RUN apt autoremove -y && \
