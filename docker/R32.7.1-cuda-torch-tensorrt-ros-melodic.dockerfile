@@ -136,6 +136,12 @@ RUN apt autoremove -y && \
     apt clean -y && \
     rm -rf /var/lib/apt/lists/*
 
+# Fix flann lz4 bug, https://github.com/ethz-asl/lidar_align/issues/16#issuecomment-504348488
+RUN mv /usr/include/flann/ext/lz4.h /usr/include/flann/ext/lz4.h.bak && \
+    mv /usr/include/flann/ext/lz4hc.h /usr/include/flann/ext/lz4.h.bak && \
+    ln -s /usr/include/lz4.h /usr/include/flann/ext/lz4.h && \
+    ln -s /usr/include/lz4hc.h /usr/include/flann/ext/lz4hc.h
+
 # nvidia-container-runtime
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=all
