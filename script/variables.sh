@@ -13,7 +13,7 @@ AVAILABLE_CORES=$(($(nproc) - 1))
 
 DOCKER_USER=tomnotch
 IMAGE_NAME=jetson-robotics
-IMAGE_TAG=R32.7.1-cuda-torch-tensorrt-ros-melodic
+IMAGE_TAG=Xavier-NX-R32.7.1-cuda-torch-tensorrt-ros-melodic
 
 CONTAINER_NAME=$IMAGE_NAME
 CONTAINER_HOME_FOLDER=/root
