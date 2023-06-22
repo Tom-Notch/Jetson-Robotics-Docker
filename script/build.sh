@@ -66,12 +66,12 @@ docker exec $CONTAINER_NAME /bin/zsh -c "mkdir -p $CONTAINER_HOME_FOLDER/opencv/
                                          -D BUILD_EXAMPLES=OFF \
                                          -D CMAKE_BUILD_TYPE=RELEASE \
                                          -D CMAKE_INSTALL_PREFIX=/usr/local .. && \
-                                         make -j${AVAILABLE_CORES} && \
-                                         sudo make install"
+                                         sudo make install -j${AVAILABLE_CORES}"
 
 # bake library paths into environment
 docker exec $CONTAINER_NAME /bin/zsh -c "echo OpenCV_DIR="/usr/local/lib/cmake/opencv4/" >> /etc/environment"
-docker exec $CONTAINER_NAME /bin/zsh -c "sudo ldconfig"
+docker exec $CONTAINER_NAME /bin/zsh -c "source $CONTAINER_HOME_FOLDER/.zshrc && \
+                                         sudo ldconfig"
 
 # clean up
 docker exec $CONTAINER_NAME /bin/zsh -c "rm -rf $CONTAINER_HOME_FOLDER/opencv && \

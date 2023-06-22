@@ -44,7 +44,9 @@ This repo contains dockerfile and script to build/pull, run docker images for cr
   ./script/run.sh
   ```
 
-  Feel free to modify the default `run.sh` to append additional parameters/mounts
+  * Feel free to modify the default `run.sh` to append additional parameters/mounts
+  * You can try to mount the `/opt/nvidia/vpi1` directory onto the container since the dev & libs of VPI 1 are all in this directory, but it's not necessary since the dockerfile already contains the directory
+    * To find out the dependencies of `nvidia-vpi`, you can execute `sudo apt update && sudo apt show nvidia-vpi` on a Jetson device; to find out the files packages (e.g. VPI 1 here) contains, you can execute `sudo dpkg -L nvidia-vpi vpi1-dev libnvvpi1` on a Jetson device
 
 ## Docker
 
@@ -124,10 +126,10 @@ This repo contains dockerfile and script to build/pull, run docker images for cr
   |    TX    |    1     |    x     |   N/A    |   N/A    |
   |          |    2     |    x     |   N/A    |   N/A    |
   |   NANO   |          |    x     |   N/A    |   N/A    |
-  * **Only VPI and TensorRT are hardware specific**, so you can still use the docker image for NX on AGX if you don't need to use VPI and TensorRT
+  * **Only VPI and TensorRT are hardware specific**, i.e., they are provided by `deb https://repo.download.nvidia.com/jetson/t194 r32.7 main`, so you can still use the docker image for NX on AGX if you don't need to use VPI and TensorRT
   * R32.7.3 is the last L4T version that supports Ubuntu 18.04, later versions ( > R34.1 ) are all on Ubuntu 20.04
 * Follow the same naming convention and format for `dockerfile` and `build.sh`, put the CPU-only build in `dockerfile` and put the GPU-required parts in `build.sh`
-  * There were attemps to put GPU-required parts in `dockerfile`, however, it didn't work, here's what's been tried:
+  * There were attempts to put GPU-required parts in `dockerfile`, however, it didn't work, here's what's been tried:
     * Modify `/etc/docker/daemon.json` to:
 
       ```json

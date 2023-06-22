@@ -1,11 +1,11 @@
- # =============================================================================
- # Created on Mon Jun 12 2023 18:34:46
- # Author: Mukai (Tom Notch) Yu
- # Email: mukaiy@andrew.cmu.edu
- # Affiliation: Carnegie Mellon University, Robotics Institute, the AirLab
- #
- # Copyright Ⓒ 2023 Mukai (Tom Notch) Yu
- # =============================================================================
+# =============================================================================
+# Created on Mon Jun 12 2023 18:34:46
+# Author: Mukai (Tom Notch) Yu
+# Email: mukaiy@andrew.cmu.edu
+# Affiliation: Carnegie Mellon University, Robotics Institute, the AirLab
+#
+# Copyright Ⓒ 2023 Mukai (Tom Notch) Yu
+# =============================================================================
 
 FROM --platform=linux/arm64 nvcr.io/nvidia/l4t-ml:r32.7.1-py3
 ENV HOME_FOLDER=/root
@@ -48,6 +48,15 @@ RUN update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1 && \
 # install some goodies
 RUN apt install -y lsb-release apt-utils software-properties-common zsh unzip ncdu git less screen tmux tree locate perl net-tools vim nano emacs htop curl wget build-essential cmake ffmpeg
 
+# upgrade cmake to kitware official apt repo release version
+RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null && \
+    apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" && \
+    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 6AF7F09730B3F0A4 && \
+    apt update -o Acquire::Check-Valid-Until=false -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngradeToInsecureRepositories=true && \
+    apt install -y kitware-archive-keyring && \
+    apt upgrade -y cmake && \
+    apt autoremove -y
+
 # install jtop
 RUN sudo pip3 install -U jetson-stats
 
@@ -66,10 +75,10 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
     -a "bindkey -M emacs '^[[3;5~' kill-word" \
     -a "bindkey '^H' backward-kill-word" \
     -a "autoload -U compinit && compinit" \
-    -a "export LD_LIBRARY_PATH=/usr/local/lib/python3.6/dist-packages/torch/lib:/usr/lib/aarch64-linux-gnu/:/usr/local/lib/python3.6/dist-packages/torch_tensorrt/lib:${LD_LIBRARY_PATH}"
+    -a "export LD_LIBRARY_PATH=/opt/nvidia/vpi1/lib64:/usr/local/lib/python3.6/dist-packages/torch/lib:/usr/lib/aarch64-linux-gnu/:/usr/local/lib/python3.6/dist-packages/torch_tensorrt/lib:${LD_LIBRARY_PATH}"
 
-# Append libtorch, TensorRT, torch_tensorrt library path to LD_LIBRARY_PATH in bashrc
-RUN echo "export LD_LIBRARY_PATH=/usr/local/lib/python3.6/dist-packages/torch/lib:/usr/lib/aarch64-linux-gnu/:/usr/local/lib/python3.6/dist-packages/torch_tensorrt/lib:${LD_LIBRARY_PATH}" >> ${HOME_FOLDER}/.bashrc
+# Append VPI 1, libtorch, TensorRT, torch_tensorrt library path to LD_LIBRARY_PATH in bashrc
+RUN echo "export LD_LIBRARY_PATH=/opt/nvidia/vpi1/lib64:/usr/local/lib/python3.6/dist-packages/torch/lib:/usr/lib/aarch64-linux-gnu/:/usr/local/lib/python3.6/dist-packages/torch_tensorrt/lib:${LD_LIBRARY_PATH}" >> ${HOME_FOLDER}/.bashrc
 
 # change default shell for the $USER in the image building process for extra environment safety
 RUN chsh -s $(which zsh)
@@ -109,13 +118,8 @@ RUN apt install -y gnupg && \
     add-apt-repository 'deb https://repo.download.nvidia.com/jetson/t194 r32.7 main' && \
     apt update
 
-# Install Bazel
-ENV BAZEL_VERSION=4.2.1
-RUN wget -q https://github.com/bazelbuild/bazel/releases/download/$BAZEL_VERSION/bazel-$BAZEL_VERSION-linux-arm64 -O /usr/bin/bazel && \
-    chmod a+x /usr/bin/bazel
-
 # Install VPI 1
-RUN apt install -y nvidia-vpi libnvvpi1 vpi1-dev vpi1-samples python-vpi1 python3-vpi1
+RUN apt install -y nvidia-vpi
 
 # Install TensorRT
 RUN apt install -y nvidia-tensorrt
@@ -142,9 +146,17 @@ RUN mv /usr/include/flann/ext/lz4.h /usr/include/flann/ext/lz4.h.bak && \
     ln -s /usr/include/lz4.h /usr/include/flann/ext/lz4.h && \
     ln -s /usr/include/lz4hc.h /usr/include/flann/ext/lz4hc.h
 
+# Patch bug introduced by libtorch: not prepending namespace c10:: to nullopt and optional< > in some files
+RUN perl -pi -e 's/(?<!c10::)optional</c10::optional</g; s/(?<!c10::)nullopt/c10::nullopt/g' /usr/local/lib/python3.6/dist-packages/torch/include/ATen/DeviceGuard.h /usr/local/lib/python3.6/dist-packages/torch/include/ATen/Functions.h
+
+# Install Bazel, prepare for building Torch-TensorRT outside dockerfile
+ENV BAZEL_VERSION=4.2.1
+RUN wget -q https://github.com/bazelbuild/bazel/releases/download/$BAZEL_VERSION/bazel-$BAZEL_VERSION-linux-arm64 -O /usr/bin/bazel && \
+    chmod a+x /usr/bin/bazel
+
 # nvidia-container-runtime
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=all
 
 # Entrypoint command
-ENTRYPOINT [ "/bin/zsh", "-c", "source ${HOME_FOLDER}/.zshrc; zsh" ]
+ENTRYPOINT [ "/bin/zsh", "-c", "source /root/.zshrc; zsh" ]

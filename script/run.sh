@@ -46,12 +46,13 @@ docker run --name $CONTAINER_NAME \
            -e "DISPLAY=$DISPLAY"  \
            -e "QT_X11_NO_MITSHM=1" \
            -e "XAUTHORITY=$XAUTH" \
-           -v /usr/local/cuda-10.2:/usr/local/cuda-10.2:ro \
+           -v $XAUTH:$XAUTH \
+           -v /run/jtop.sock:/run/jtop.sock \
            -v /var/lib/systemd/coredump:/cores \
            -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
-           -v /run/jtop.sock:/run/jtop.sock \
-           -v $XAUTH:$XAUTH \
+           -v /usr/local/cuda-10.2:/usr/local/cuda-10.2:ro \
            -v "$DATASET_PATH:$CONTAINER_HOME_FOLDER/data" \
-           -w "$CONTAINER_HOME_FOLDER/" \
+           -v "/home/airlab/code/Multi-Spectral-Inertial-Odometry:$CONTAINER_HOME_FOLDER/Multi-Spectral-Inertial-Odometry" \
+           -w "$CONTAINER_HOME_FOLDER/Multi-Spectral-Inertial-Odometry" \
            --rm \
            -itd $DOCKER_USER/$IMAGE_NAME:$IMAGE_TAG
