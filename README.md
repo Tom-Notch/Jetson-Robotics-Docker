@@ -147,3 +147,7 @@ This repo contains dockerfile and script to build/pull, run docker images for cr
       Then `sudo systemctl restart docker`, this enables `--runtime=nvidia` in dockerfile build stage, but the `/usr/local/cuda-10.2/` inside the docker is still missing important libraries to build GPU-required libraries
     * Save state of `/usr/local/cuda-10.2/` temporarily, `COPY` recursively from a `--build-context cuda-config=/usr/local/cuda-10.2/`, then build GPU-required libraries, finally restore `/usr/local/cuda-10.2/` to the state before `COPY`
       * This didn't work since there were more required libraries under `/usr/lib/aarch64-linux-gnu/` like `libcudnn.so`, but the directory contains almost all the other unused libraries and is too big to perform the previous practice
+
+## Contacts
+
+* Author: Mukai (Tom Notch) Yu: [mukaiy@andrew.cmu.edu](mailto:mukaiy@andrew.cmu.edu)
