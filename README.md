@@ -29,19 +29,19 @@ This repo contains dockerfile and script to build/pull, run docker images for cr
 * To build:
 
   ```Shell
-  ./script/build.sh
+  ./scripts/build.sh
   ```
 
 * To pull:
 
   ```Shell
-  ./script/pull.sh
+  ./scripts/pull.sh
   ```
 
 * To run:
 
   ```Shell
-  ./script/run.sh
+  ./scripts/run.sh
   ```
 
   * Feel free to modify the default `run.sh` to append additional parameters/mounts
