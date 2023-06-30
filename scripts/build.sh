@@ -10,7 +10,8 @@
 
 . "$(dirname "$0")"/variables.sh
 
-docker buildx build --platform linux/arm64 \
+docker buildx build \
+	--platform linux/arm64 \
 	--build-context home-folder-config="$(dirname "$0")"/../docker/build-context/home-folder \
 	--build-context torch-tensorrt-config="$(dirname "$0")"/../docker/build-context/Torch-TensorRT \
 	-t "$DOCKER_USER"/"$IMAGE_NAME":"$IMAGE_TAG" \

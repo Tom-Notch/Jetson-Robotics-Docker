@@ -29,7 +29,8 @@ if [ "$(docker ps -a -q -f name="$CONTAINER_NAME")" ]; then
 	echo "Done"
 fi
 
-docker run --name "$CONTAINER_NAME" \
+docker run \
+	--name "$CONTAINER_NAME" \
 	--hostname "$(hostname)" \
 	--privileged \
 	--platform=linux/arm64 \
