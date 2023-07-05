@@ -11,7 +11,7 @@
 export XAUTH=/tmp/.docker.xauth
 export AVAILABLE_CORES=$(($(nproc) - 1))
 
-export DOCKER_USER=tomnotch
+export DOCKER_USER=theairlab
 export IMAGE_NAME=jetson-robotics
 export IMAGE_TAG=Xavier-NX-R32.7.1-cuda-torch-tensorrt-ros-melodic
 

@@ -46,7 +46,17 @@ RUN update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1 && \
     update-alternatives --set pip /usr/bin/pip2
 
 # install some goodies
-RUN apt install -y lsb-release apt-utils software-properties-common zsh unzip ncdu git less screen tmux tree locate perl net-tools vim nano emacs htop curl wget build-essential cmake ffmpeg
+RUN apt install -y lsb-release apt-utils software-properties-common zsh unzip ncdu git less screen tmux tmuxp tree locate perl net-tools vim nano emacs htop curl wget build-essential ffmpeg
+
+# Install clang, llvm
+#! clang-8 is the latest stable and only supported version by nvcc on Jetson ubuntu 18.04
+RUN apt install -y clang-8 llvm-8 lld-8 lldb-8 lld-8 clang-format-8 clang-tidy-8 clang-tools-8 --install-recommends && \
+    update-alternatives --install /usr/bin/clang clang /usr/bin/clang-8 100 && \
+    update-alternatives --install /usr/bin/cc cc /usr/bin/clang 100 && \
+    update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-8 100 && \
+    update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 100 && \
+    update-alternatives --install /usr/bin/ld.lld ld.lld /usr/bin/ld.lld-8 100 && \
+    update-alternatives --install /usr/bin/ld ld /usr/bin/ld.lld 100
 
 # upgrade cmake to kitware official apt repo release version
 RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null && \
@@ -64,7 +74,7 @@ RUN sudo pip3 install -U jetson-stats
 COPY --from=home-folder-config ./. ${HOME_FOLDER}/
 
 # install zsh, Oh-My-Zsh, and plugins
-RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v1.1.5/zsh-in-docker.sh)" -- \
+RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/latest/download/zsh-in-docker.sh)" -- \
     -t https://github.com/romkatv/powerlevel10k \
     -p git \
     -p https://github.com/zsh-users/zsh-autosuggestions \
@@ -75,10 +85,10 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
     -a "bindkey -M emacs '^[[3;5~' kill-word" \
     -a "bindkey '^H' backward-kill-word" \
     -a "autoload -U compinit && compinit" \
-    -a "export LD_LIBRARY_PATH=/opt/nvidia/vpi1/lib64:/usr/local/lib/python3.6/dist-packages/torch/lib:/usr/lib/aarch64-linux-gnu/:/usr/local/lib/python3.6/dist-packages/torch_tensorrt/lib:${LD_LIBRARY_PATH}"
+    -a "export LD_LIBRARY_PATH=/opt/nvidia/vpi1/lib64:/usr/local/lib/python3.6/dist-packages/torch/lib:/usr/local/lib/python3.6/dist-packages/torch_tensorrt/lib:${LD_LIBRARY_PATH}"
 
 # Append VPI 1, libtorch, TensorRT, torch_tensorrt library path to LD_LIBRARY_PATH in bashrc
-RUN echo "export LD_LIBRARY_PATH=/opt/nvidia/vpi1/lib64:/usr/local/lib/python3.6/dist-packages/torch/lib:/usr/lib/aarch64-linux-gnu/:/usr/local/lib/python3.6/dist-packages/torch_tensorrt/lib:${LD_LIBRARY_PATH}" >> ${HOME_FOLDER}/.bashrc
+RUN echo "export LD_LIBRARY_PATH=/opt/nvidia/vpi1/lib64:/usr/local/lib/python3.6/dist-packages/torch/lib:/usr/local/lib/python3.6/dist-packages/torch_tensorrt/lib:${LD_LIBRARY_PATH}" >> ${HOME_FOLDER}/.bashrc
 
 # change default shell for the $USER in the image building process for extra environment safety
 RUN chsh -s $(which zsh)
@@ -94,15 +104,9 @@ RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main"
     apt install -y ros-melodic-desktop-full && \
     echo "source /opt/ros/melodic/setup.zsh" >> ${HOME_FOLDER}/.zshrc && \
     echo "source /opt/ros/melodic/setup.bash" >> ${HOME_FOLDER}/.bashrc && \
-    apt install -y python-rosdep python-rosinstall python-rosinstall-generator python-wstool && \
+    apt install -y python-rosdep python-rosinstall python-rosinstall-generator python-wstool python-catkin-tools ros-melodic-rosmon && \
     rosdep init && \
     rosdep update
-
-# Install catkin tools and rosmon
-RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu `lsb_release -sc` main" > /etc/apt/sources.list.d/ros-latest.list' && \
-    wget http://packages.ros.org/ros.key -O - | apt-key add - && \
-    apt update -o Acquire::Check-Valid-Until=false -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngradeToInsecureRepositories=true && \
-    apt install -y python3-catkin-tools ros-melodic-rosmon
 
 # mark-hold on libopencv-dev to 3.2
 RUN apt-mark hold libopencv-dev
@@ -134,8 +138,18 @@ RUN apt install -y cmake libgoogle-glog-dev libgflags-dev libatlas-base-dev libe
     make install && \
     rm -rf ${HOME_FOLDER}/ceres-solver
 
+# Install DBoW2 from source
+RUN git clone --recursive https://github.com/dorian3d/DBoW2.git ${HOME_FOLDER}/DBoW2 && \
+    mkdir -p ${HOME_FOLDER}/DBoW2/build && \
+    cd ${HOME_FOLDER}/DBoW2/build && \
+    cmake .. && \
+    make -j$(($(nproc)-1)) && \
+    make install && \
+    rm -rf ${HOME_FOLDER}/DBoW2
+
 # end of apt installs
-RUN apt autoremove -y && \
+RUN apt full-upgrade -y && \
+    apt autoremove -y && \
     apt autoclean -y && \
     apt clean -y && \
     rm -rf /var/lib/apt/lists/*

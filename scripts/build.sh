@@ -42,40 +42,50 @@ docker exec "$CONTAINER_NAME" /bin/zsh -c "git clone --recursive https://github.
 # build and install
 # Starting with v2.0 Ceres requires a fully C++14-compliant compiler. In versions <= 1.14, C++11 was an optional requirement. https://github.com/colmap/colmap/issues/905#issuecomment-731138700
 docker exec "$CONTAINER_NAME" /bin/zsh -c "mkdir -p $CONTAINER_HOME_FOLDER/opencv/build && \
-                                         cd $CONTAINER_HOME_FOLDER/opencv/build && \
-                                         cmake \
-                                         -D CMAKE_CXX_STANDARD=14 \
-                                         -D WITH_CUDA=ON \
-                                         -D WITH_CUDNN=ON \
-                                         -D WITH_CUBLAS=ON \
-                                         -D CUDA_ARCH_BIN=7.2 \
-                                         -D CUDA_ARCH_PTX="" \
-                                         -D CUDA_FAST_MATH=ON \
-                                         -D OPENCV_DNN_CUDA=ON \
-                                         -D ENABLE_NEON=ON \
-                                         -D EIGEN_INCLUDE_PATH=/usr/include/eigen3 \
-                                         -D OPENCV_GENERATE_PKGCONFIG=ON \
-                                         -D BUILD_opencv_python3=ON \
-                                         -D OPENCV_ENABLE_NONFREE=ON \
-                                         -D OPENCV_EXTRA_MODULES_PATH=../../opencv_contrib/modules \
-                                         -D WITH_GSTREAMER=ON \
-                                         -D WITH_V4L=ON \
-                                         -D WITH_OPENGL=ON \
-                                         -D BUILD_TESTS=OFF \
-                                         -D BUILD_PERF_TESTS=OFF \
-                                         -D BUILD_EXAMPLES=OFF \
-                                         -D CMAKE_BUILD_TYPE=RELEASE \
-                                         -D CMAKE_INSTALL_PREFIX=/usr/local .. && \
-                                         sudo make install -j${AVAILABLE_CORES}"
+                                           cd $CONTAINER_HOME_FOLDER/opencv/build && \
+                                           cmake \
+                                           -D CMAKE_CXX_STANDARD=14 \
+                                           -D WITH_CUDA=ON \
+                                           -D WITH_CUDNN=ON \
+                                           -D WITH_CUBLAS=ON \
+                                           -D CUDA_ARCH_BIN=7.2 \
+                                           -D CUDA_ARCH_PTX="" \
+                                           -D CUDA_FAST_MATH=ON \
+                                           -D OPENCV_DNN_CUDA=ON \
+                                           -D ENABLE_NEON=ON \
+                                           -D EIGEN_INCLUDE_PATH=/usr/include/eigen3 \
+                                           -D OPENCV_GENERATE_PKGCONFIG=ON \
+                                           -D BUILD_opencv_python3=ON \
+                                           -D OPENCV_ENABLE_NONFREE=ON \
+                                           -D OPENCV_EXTRA_MODULES_PATH=../../opencv_contrib/modules \
+                                           -D WITH_GSTREAMER=ON \
+                                           -D WITH_V4L=ON \
+                                           -D WITH_OPENGL=ON \
+                                           -D BUILD_TESTS=OFF \
+                                           -D BUILD_PERF_TESTS=OFF \
+                                           -D BUILD_EXAMPLES=OFF \
+                                           -D CMAKE_BUILD_TYPE=RELEASE \
+                                           -D CMAKE_INSTALL_PREFIX=/usr/local .. && \
+                                           sudo make install -j${AVAILABLE_CORES}"
 
 # bake library paths into environment
 docker exec "$CONTAINER_NAME" /bin/zsh -c "echo OpenCV_DIR=/usr/local/lib/cmake/opencv4/ >> /etc/environment"
 docker exec "$CONTAINER_NAME" /bin/zsh -c "source $CONTAINER_HOME_FOLDER/.zshrc && \
-                                         sudo ldconfig"
+                                           sudo ldconfig"
 
 # clean up
 docker exec "$CONTAINER_NAME" /bin/zsh -c "rm -rf $CONTAINER_HOME_FOLDER/opencv && \
-                                         rm -rf $CONTAINER_HOME_FOLDER/opencv_contrib"
+                                           rm -rf $CONTAINER_HOME_FOLDER/opencv_contrib"
+
+# Install cmake 3.15.7 from source
+#! cmake version can be up to 3.15.7 because of libtorch bug: /usr/bin/ld: cannot find -ltorch_global_deps
+# Must install after opencv because because some opencv contrib uses download which is supported in later cmake versions
+docker exec "$CONTAINER_NAME" /bin/zsh -c "git clone --recursive https://github.com/Kitware/CMake.git -b v3.15.7 ${HOME_FOLDER}/cmake && \
+                                           cd ${HOME_FOLDER}/cmake/ && \
+                                           cmake . && \
+                                           make -j$(($(nproc) - 1)) && \
+                                           make install && \
+                                           rm -rf ${HOME_FOLDER}/cmake"
 
 # commit and finalize
 docker commit "$CONTAINER_NAME" "$DOCKER_USER"/"$IMAGE_NAME":"$IMAGE_TAG"
