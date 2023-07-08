@@ -56,7 +56,8 @@ RUN apt install -y clang-8 llvm-8 lld-8 lldb-8 lld-8 clang-format-8 clang-tidy-8
     update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-8 100 && \
     update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 100 && \
     update-alternatives --install /usr/bin/ld.lld ld.lld /usr/bin/ld.lld-8 100 && \
-    update-alternatives --install /usr/bin/ld ld /usr/bin/ld.lld 100
+    update-alternatives --install /usr/bin/ld ld /usr/bin/ld.lld 100 && \
+    update-alternatives --install /usr/bin/ld ld /usr/bin/aarch64-linux-gnu-ld 50
 
 # upgrade cmake to kitware official apt repo release version
 RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null && \
