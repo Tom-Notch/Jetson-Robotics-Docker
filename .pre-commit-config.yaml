@@ -18,11 +18,14 @@ repos:
       hooks:
           - id: yamlfmt
 
-    - repo: https://github.com/hadolint/hadolint # hadolint is a Dockerfile linter.
-      rev: v2.12.0
+    - repo: https://github.com/AleksaC/hadolint-py # hadolint is a Dockerfile linter.
+      rev: v2.12.0.2
       hooks:
-          - id: hadolint-docker
+          - id: hadolint
             files: (?i)(.*dockerfile.*)$
+            args:
+                - -t
+                - error
 
     - repo: https://github.com/scop/pre-commit-shfmt # pre-commit-shfmt formats shell scripts.
       rev: v3.7.0-1
@@ -49,10 +52,10 @@ repos:
           - id: clang-format
             # files: (?i)\.(h|c|hpp|cpp|hxx|cxx|cc)$
 
-    # - repo: https://github.com/pocc/pre-commit-hooks # pre-commit-hooks is a collection of additional pre-commit hooks. Using clang-tidy only for now.
-    #   rev: v1.3.5
-    #   hooks:
-    #       - id: clang-tidy
+    - repo: https://github.com/pocc/pre-commit-hooks # pre-commit-hooks is a collection of additional pre-commit hooks. Using clang-tidy only for now.
+      rev: v1.3.5
+      hooks:
+          - id: clang-tidy
 
     - repo: https://github.com/cheshirekow/cmake-format-precommit # cmake-format-precommit is a cmake-format wrapper.
       rev: v0.6.13
