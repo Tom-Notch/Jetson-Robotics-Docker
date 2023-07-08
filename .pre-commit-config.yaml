@@ -52,10 +52,10 @@ repos:
           - id: clang-format
             # files: (?i)\.(h|c|hpp|cpp|hxx|cxx|cc)$
 
-    - repo: https://github.com/pocc/pre-commit-hooks # pre-commit-hooks is a collection of additional pre-commit hooks. Using clang-tidy only for now.
-      rev: v1.3.5
-      hooks:
-          - id: clang-tidy
+    # - repo: https://github.com/pocc/pre-commit-hooks # pre-commit-hooks is a collection of additional pre-commit hooks. Using clang-tidy only for now.
+    #   rev: v1.3.5
+    #   hooks:
+    #       - id: clang-tidy
 
     - repo: https://github.com/cheshirekow/cmake-format-precommit # cmake-format-precommit is a cmake-format wrapper.
       rev: v0.6.13

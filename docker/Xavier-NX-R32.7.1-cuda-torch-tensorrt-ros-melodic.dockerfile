@@ -37,16 +37,19 @@ RUN apt install -y python-dev python-pip python-setuptools python-wheel && \
 
 # set default python version to 2
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 1 && \
-    update-alternatives --install /usr/bin/python python /usr/bin/python2 2 && \
-    update-alternatives --set python /usr/bin/python2
+    update-alternatives --install /usr/bin/python python /usr/bin/python2 2
 
 # set default pip version to pip2
 RUN update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1 && \
-    update-alternatives --install /usr/bin/pip pip /usr/bin/pip2 2 && \
-    update-alternatives --set pip /usr/bin/pip2
+    update-alternatives --install /usr/bin/pip pip /usr/bin/pip2 2
 
 # install some goodies
 RUN apt install -y lsb-release apt-utils software-properties-common zsh unzip ncdu git less screen tmux tmuxp tree locate perl net-tools vim nano emacs htop curl wget build-essential ffmpeg
+
+# Install python3.8 for pre-commit
+RUN add-apt-repository -y ppa:deadsnakes/ppa && \
+    apt install -y python3.8 python3.8-dev python3.8-distutils && \
+    python3.8 -m pip install pre-commit
 
 # Install clang, llvm
 #! clang-8 is the latest stable and only supported version by nvcc on Jetson ubuntu 18.04
